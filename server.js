@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-// import express from "express";
-// import cors from "cors"; -> module
+const conexao = require("./db.js");
 
 const app = express();
 
@@ -11,7 +10,7 @@ app.use(express.json());
 let ALUNOS = [
     { id: 1, nome: "Yuri", curso: "Desenvolvimento de sistemas" },
     { id: 2, nome: "Victória", curso: "Redes de computadores" },
-    { id: 3, nome: "   Thiago", curso: "Administração" },
+    { id: 3, nome: "Thiago", curso: "Administração" },
     { id: 4, nome: "Evellyn", curso: "Desenvolvimento de sistemas" },
 ];
 
@@ -23,27 +22,44 @@ app.get("/", (req, res) => {
 
 
 
-app.get("/alunos", (req, res) => {
-    res.json(ALUNOS);
+app.get("/alunos", async (req, res) => {
+    try {
+        const [resultado] = await conexao.query("SELECT * FROM alunos");
+        res.status(200).json(resultado);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            mensagem: "Erro ao buscar alunos"
+        });
+    }
 });
 
-app.get("/alunos/:id", (req, res) => {
-    const id = Number(req.params.id);
 
-    const aluno = ALUNOS.find(a => a.id === id);
+app.get("/alunos/:id", async (req, res) => {
 
-    if (!aluno) {
-        return res.status(404).json({
-            mensagem: "Aluno não encontrado"
-        })
+    try {
+        const id = Number(req.params.id);
+        const [aluno] = await conexao.query(`SELECT * FROM alunos WHERE id = ${id}`);
+        console.log(aluno);
+        if (aluno.length === 0) {
+            return res.status(404).json({
+                mensagem: "Aluno não encontrado"
+            })
+        }
+
+        res.status(200).json(aluno);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            mensagem: "Erro ao buscar alunos"
+        });
     }
-    res.status(200).json(aluno);
 });
 
 app.post("/alunos/cadastrar", (req, res) => {
-    const { nome, curso } = req.body;
+    const { nome, cuso } = req.body;
 
-    if (!nome || !curso) {
+    if (!nome || !cuso) {
         return res.status(400).json({ mensagem: "Nome e curso são obrigatórios" });
     }
 
@@ -54,7 +70,7 @@ app.post("/alunos/cadastrar", (req, res) => {
     const novoAluno = {
         id: novoId,
         nome: nome,
-        curso: curso
+        cuso: cuso
     };
 
     ALUNOS.push(novoAluno);
@@ -64,28 +80,28 @@ app.post("/alunos/cadastrar", (req, res) => {
     })
 });
 
-app.put("/alunos/:id", (req, res)=>{
+app.put("/alunos/:id", (req, res) => {
     const id = Number(req.params.id);
-    const {nome, curso} = req.body;
+    const { nome, cuso } = req.body;
 
-    const indice = ALUNOS.findIndex(aluno=> aluno.id === id);
+    const indice = ALUNOS.findIndex(aluno => aluno.id === id);
 
-    if(indice === -1){
+    if (indice === -1) {
         return res.status(404).json({
             mensagem: "Aluno não encontrado"
         });
     }
 
-    if(!nome || !curso){
+    if (!nome || !cuso) {
         return res.status(400).json({
             mensagem: "Nome e curso são obrigatórios"
         });
     }
 
     ALUNOS[indice] = {
-        id : id,
-        nome : nome,
-        curso : curso
+        id: id,
+        nome: nome,
+        cuso: cuso
     };
 
     res.status(200).json({
